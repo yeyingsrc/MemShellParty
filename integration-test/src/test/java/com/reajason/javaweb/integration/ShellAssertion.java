@@ -14,7 +14,6 @@ import com.reajason.javaweb.packer.Packers;
 import com.reajason.javaweb.packer.jar.*;
 import com.reajason.javaweb.packer.translet.XalanAbstractTransletPacker;
 import com.reajason.javaweb.suo5.Suo5Manager;
-import com.reajason.javaweb.utils.CommonUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.bytebuddy.jar.asm.Opcodes;
@@ -71,6 +70,7 @@ public class ShellAssertion {
                 || shellType.endsWith(ShellType.SPRING_WEBMVC_CONTROLLER_HANDLER)
                 || shellType.equals(ShellType.SPRING_WEBFLUX_HANDLER_METHOD)
                 || shellType.equals(ShellType.SPRING_WEBFLUX_HANDLER_FUNCTION)
+                || shellType.equals(ShellType.ACTION)
         ) {
             urlPattern = "/" + shellTool + shellType + packer.name();
             shellUrl = url + urlPattern;
@@ -233,7 +233,8 @@ public class ShellAssertion {
                 behinderIsOk(shellUrl, ((BehinderConfig) generateResult.getShellToolConfig()));
                 break;
             case Suo5:
-                suo5IsOk(shellUrl, ((Suo5Config) generateResult.getShellToolConfig()));
+            case Suo5v2:
+                suo5IsOk(shellTool, shellUrl, ((Suo5Config) generateResult.getShellToolConfig()));
                 break;
             case AntSword:
                 antSwordIsOk(shellUrl, ((AntSwordConfig) generateResult.getShellToolConfig()));
@@ -300,8 +301,8 @@ public class ShellAssertion {
         assertTrue(behinderManager.test());
     }
 
-    public static void suo5IsOk(String entrypoint, Suo5Config shellConfig) {
-        assertTrue(Suo5Manager.test(entrypoint, shellConfig.getHeaderValue()));
+    public static void suo5IsOk(String shellTool, String entrypoint, Suo5Config shellConfig) {
+        assertTrue(Suo5Manager.test(shellTool, entrypoint, shellConfig.getHeaderValue()));
     }
 
     public static void antSwordIsOk(String entrypoint, AntSwordConfig shellConfig) {
@@ -342,6 +343,7 @@ public class ShellAssertion {
                 log.info("generated {} behinder with pass: {}, User-Agent: {}", shellType, behinderPass, uniqueName);
                 break;
             case Suo5:
+            case Suo5v2:
                 shellToolConfig = Suo5Config.builder()
                         .headerName("User-Agent")
                         .headerValue(uniqueName)
@@ -480,7 +482,8 @@ public class ShellAssertion {
         assertThat(res, anyOf(
                 Matchers.containsString("context: "),
                 Matchers.containsString("server: "),
-                Matchers.containsString("channel: ")
+                Matchers.containsString("channel: "),
+                Matchers.containsString("namespace: ")
 
         ));
         ShellAssertion.commandIsOk(shellUrl, shellType, paramName, "id");
